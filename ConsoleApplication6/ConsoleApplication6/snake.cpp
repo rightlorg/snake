@@ -1,4 +1,36 @@
-#include "stdafx.h"
+// BisoShow.cpp : ¶¨Òå¿ØÖÆÌ¨Ó¦ÓÃ³ÌĞòµÄÈë¿Úµã¡£
+//
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <iostream>
+#include <conio.h>
+#include <ctime>
+
+#define X_MAX 40
+#define Y_MAX 20
+#define TIME_DELAY 100
+#include <Windows.h>
+
+
+#ifdef WIN32
+HANDLE handle;
+
+#else
+//linux
+
+#endif
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <iostream>
+#include <conio.h>
+#include <ctime>
+
+#define X_MAX 40
+#define Y_MAX 20
+#define TIME_DELAY 100
+
 
 static char print_array[Y_MAX][X_MAX];
 static unsigned int score = 0;
@@ -7,28 +39,34 @@ int snake_count = 3;
 bool if_get_fruit = 0;
 using namespace std;
 
-struct Coordinate			//ç‚¹åæ ‡
+struct Coordinate			//µã×ø±ê
 {
 	int x, y;
 };
-struct NODE				//åŒå‘é“¾è¡¨ç»“æ„
+struct NODE				//Ë«ÏòÁ´±í½á¹¹
 {
 	Coordinate coord;
 	NODE* pre;
 	NODE* next;
 };
 
-struct NODE* list_delete(NODE *pHead);
+NODE* list_delete(NODE *pHead);
 struct NODE* list_insert(NODE *first, bool if_get_fruit);
-short hitCheck(const NODE *first, struct Coordinate fruit);	//æ£€éªŒç¢°æ’
-void print_frame();
+short hitCheck(const NODE *first, struct Coordinate fruit);	//¼ìÑéÅö×²
+void print_frame(int flag);
 void delay();
 void kb_check();
 struct NODE* settings();
 struct Coordinate gen_fruit(NODE *first);
+void clear_frame();
 
-int main()
+
+int main()                                      /*MAIN /*Coord   X  Y  */
 {
+
+#ifdef WIN32
+	handle = GetStdHandle((STD_OUTPUT_HANDLE));
+#endif	
 	struct Coordinate fruit = { 0, 0 };
 	struct NODE *pHead = NULL;
 	short hit_re = 3;
@@ -49,12 +87,13 @@ int main()
 	fflush(stdin);
 	//first start
 	fruit = gen_fruit(pHead);
-	print_frame();
+	print_frame(0);
 	//loop
 	while (1)
 	{
 		pHead = list_insert(pHead, 0);
 		pHead = list_delete(pHead);
+		print_frame(1);
 		hit_re = hitCheck(pHead, fruit);
 		switch (hit_re)
 		{
@@ -72,64 +111,48 @@ int main()
 			fruit = gen_fruit(pHead);
 			break;
 		case 1:
-			goto EXIT;
+			score = 0;
+			direction = 'd';
+			_getch();
+			return 0;
 		}
-		system("cls");
-		print_frame();
-		fflush(stdin);
 		delay();
+		clear_frame();
+		fflush(stdin);
+	
 	}
-EXIT:
-	struct NODE *current = pHead;
-	struct NODE *previous = NULL;
-	for (size_t i = 0; i < snake_count; i++) {
-		previous = current;
-		current = current->next;
-		free(previous);
-		previous = NULL;
-	}
-	pHead = NULL;
-	current = NULL;
-	system("pause");
-	return 0;
+
 }
 
-// æ’è‡ªå·±å’Œæ’å¢™è¿”å›1ï¼Œæ’æœå­è¿”å›2ï¼Œå•¥éƒ½æ²¡æ’è¿”å›3
+// ×²Ç½·µ»Ø0£¬×²×Ô¼º·µ»Ø1£¬×²¹û×Ó·µ»Ø2£¬É¶¶¼Ã»×²·µ»Ø3
 short hitCheck(const NODE *first, struct Coordinate fruit)
 {
 	int head_x = (first->coord).x;
 	int head_y = (first->coord).y;
 
-	// åƒåˆ°æœå­
+	// ³Ôµ½¹û×Ó
 	if (head_x == fruit.x && head_y == fruit.y)
 		return 2;
 
-	// æ’å¢™
-	if (head_x == 0 || head_x == X_MAX - 1)
-		return 1;
-	if (head_y == 0 || head_y == Y_MAX - 1)
-		return 1;
-
-	// æ’è‡ªå·±
-	struct NODE *current = first->next;
+	// ×²×Ô¼º
+	NODE *current = first->next;
 	for (int i = 0; i<(snake_count - 1); i++) {
 		if (head_x == (current->coord).x && head_y == (current->coord).y)
 			return 1;
 		current = current->next;
 
 	}
-	if ((first->coord).x == 0 || (first->coord).x == X_MAX - 1 || (first->coord).y == 0 || (first->coord).y == Y_MAX - 1)
-		return 1;
-	// å•¥éƒ½æ²¡æ’
+	// É¶¶¼Ã»×²
 	return 3;
 }
 
-struct NODE* list_delete(NODE* pHead)
+NODE* list_delete(NODE* pHead)
 {
-	NODE* TEMP,*_TEMP;
+	NODE* TEMP, *_TEMP;
 	TEMP = pHead->pre;
 	_TEMP = TEMP->pre;
 	print_array[(TEMP->coord).y][(TEMP->coord).x] = ' ';
+	printf("%c", print_array[TEMP->coord.y][TEMP->coord.x]);
 	_TEMP->next = pHead;
 	pHead->pre = _TEMP;
 	free(TEMP);
@@ -153,21 +176,29 @@ struct NODE *list_insert(NODE *first, bool if_get_fruit)
 	case 'w':
 		(newfirst->coord).y = ((first->coord).y) - 1;
 		(newfirst->coord).x = (first->coord).x;
+		if ((newfirst->coord).y == 0)
+			(newfirst->coord).y = Y_MAX - 2;
 		print_array[(newfirst->coord).y][(newfirst->coord).x] = '@';
 		break;
 	case 'a':
 		(newfirst->coord).y = (first->coord).y;
 		(newfirst->coord).x = (first->coord.x) - 1;
+		if ((newfirst->coord).x == 1)
+			(newfirst->coord).x = X_MAX - 2;
 		print_array[(newfirst->coord).y][(newfirst->coord).x] = '@';
 		break;
 	case 's':
 		(newfirst->coord).y = (first->coord.y) + 1;
 		(newfirst->coord).x = (first->coord).x;
+		if ((newfirst->coord).y == Y_MAX-1)
+			(newfirst->coord).y = 2;
 		print_array[(newfirst->coord).y][(newfirst->coord).x] = '@';
 		break;
 	case 'd':
 		(newfirst->coord).y = (first->coord).y;
 		(newfirst->coord).x = ((first->coord).x) + 1;
+		if ((newfirst->coord).x == X_MAX-1)
+			(newfirst->coord).x = 2;
 		print_array[(newfirst->coord).y][(newfirst->coord).x] = '@';
 		break;
 	}
@@ -175,14 +206,68 @@ struct NODE *list_insert(NODE *first, bool if_get_fruit)
 	return newfirst;
 }
 
-void print_frame()
+
+static void __cls(int x, int y) {
+	COORD coordScreen = { 0, 0 }; 
+	coordScreen.X = x-1;
+	coordScreen.Y = y;
+	BOOL bSuccess;    
+	bSuccess = SetConsoleCursorPosition(handle, coordScreen); 
+	printf(" ");
+	coordScreen.X = 0;//39;
+	coordScreen.Y = 0; //19;
+	SetConsoleCursorPosition(handle, coordScreen); 
+}
+
+void clear_frame()
 {
-	int i, index;
-	for (i = 0; i < Y_MAX; i++)
-	{
-		for (index = 0; index < X_MAX; index++)
-			printf("%c", print_array[i][index]);
-		printf("\n");
+	int x, y;
+
+	for (x = 0; x < Y_MAX; ++x) {
+		for (y = 0; y < X_MAX; ++y) {
+			if (print_array[x][y] == '@')
+				__cls(y, x);
+		}
+	}
+}
+
+static void __printf(int x , int y, char c) {
+	COORD coordScreen = { 0, 0 }; 
+	coordScreen.X = y-1;
+	coordScreen.Y = x;
+	BOOL bSuccess;    
+	bSuccess = SetConsoleCursorPosition(handle, coordScreen); 
+	printf("%c", c);
+	coordScreen.X = 0;//39;
+	coordScreen.Y = 0; //19;
+	SetConsoleCursorPosition(handle, coordScreen); 	
+}
+
+void print_frame(int first)
+{
+	int i, index, ic;
+	if (first == 0) {
+		for (i = 0; i < Y_MAX; i++)
+		{
+			for (index = 0; index < X_MAX; index++) {
+				if (print_array[i][index] != '*')
+					printf("%c", print_array[i][index]);
+				else
+					printf(" ");
+			}
+			printf("\n");
+		}
+	} else {
+
+		for (i = 0; i < Y_MAX; i++)
+		{
+			for (index = 0; index < X_MAX; index++) {
+				if (print_array[i][index] == '@' || print_array[i][index] == '*')
+				   __printf(i, index, print_array[i][index]);
+			}
+			printf("\n");
+		}
+
 	}
 }
 
@@ -192,22 +277,22 @@ struct NODE* settings()
 	TEMPx = int(X_MAX / 2);
 	TEMPy = int(Y_MAX / 2);
 
-	// åˆå§‹åŒ–å¢™å’Œè›‡
-	for (size_t i = 0; i < X_MAX; i++)		// æœ€ä¸Šé¢ä¸€æ’
+	// ³õÊ¼»¯Ç½ºÍÉß
+	for (size_t i = 0; i < X_MAX; i++)		// ×îÉÏÃæÒ»ÅÅ
 		print_array[0][i] = '-';
-	for (size_t i = 0; i < X_MAX; i++)		// æœ€ä¸‹é¢ä¸€æ’
+	for (size_t i = 0; i < X_MAX; i++)		// ×îÏÂÃæÒ»ÅÅ
 		print_array[Y_MAX - 1][i] = '-';
-	for (size_t i = 1; i < (Y_MAX - 1); i++) {	// æœ€å·¦è¾¹å’Œæœ€å³è¾¹ä¸€æ’
+	for (size_t i = 1; i < (Y_MAX - 1); i++) {	// ×î×ó±ßºÍ×îÓÒ±ßÒ»ÅÅ
 		print_array[i][0] = '|';
 		print_array[i][X_MAX - 1] = '|';
 	}
-	for (size_t i = 1; i < (Y_MAX - 1); i++) {	// å…¶ä½™éƒ¨åˆ†
+	for (size_t i = 1; i < (Y_MAX - 1); i++) {	// ÆäÓà²¿·Ö
 		for (size_t j = 1; j < (X_MAX - 1); j++) {
 			print_array[i][j] = ' ';
 		}
 	}
 
-	//åˆå§‹é“¾è¡¨åˆ›å»º
+	//³õÊ¼Á´±í´´½¨
 	print_array[TEMPy][TEMPx--] = '@';
 	print_array[TEMPy][TEMPx--] = '@';
 	print_array[TEMPy][TEMPx] = '@';
@@ -219,20 +304,20 @@ struct NODE* settings()
 	h = (NODE*)malloc(sizeof(NODE));
 	h->coord.y = TEMPy;
 	h->coord.x = TEMPx--;
-	h->pre = NULL;			//ç©ºçš„åŒå‘é“¾è¡¨å‰é©±å’Œåé©±éƒ½ä¼šæŒ‡å‘è‡ªå·±ï¼›
+	h->pre = NULL;			//¿ÕµÄË«ÏòÁ´±íÇ°ÇıºÍºóÇı¶¼»áÖ¸Ïò×Ô¼º£»
 	h->next = NULL;
 	p = h;
 	for (size_t i = 0; i < 2; i++)
 	{
 		l = (NODE *)malloc(sizeof(NODE));
-		((l->coord).x) = TEMPx--;	((l->coord).y) = TEMPy;		//èµ‹å€¼
+		((l->coord).x) = TEMPx--;	((l->coord).y) = TEMPy;		//¸³Öµ
 		p->next = l;
 		l->pre = p;
-		l->next = h;      //æ³¨æ„ï¼Œl->nexté“¾æ¥çš„æ˜¯å¤´èŠ‚ç‚¹ï¼Œã€€
-		h->pre = l;		//è€Œå¤´ç»“ç‚¹çš„å‰é©±æ˜¯lã€‚ è¿™æ ·ä¾¿æ„æˆäº†ä¸€ä¸ªå¾ªç¯çš„åŒå‘é“¾è¡¨
+		l->next = h;      //×¢Òâ£¬l->nextÁ´½ÓµÄÊÇÍ·½Úµã£¬¡¡
+		h->pre = l;		//¶øÍ·½áµãµÄÇ°ÇıÊÇl¡£ ÕâÑù±ã¹¹³ÉÁËÒ»¸öÑ­»·µÄË«ÏòÁ´±í
 		p = l;
 	}
-	return (h);			//è¿”å›é“¾è¡¨
+	return (h);			//·µ»ØÁ´±í
 
 }
 
@@ -240,13 +325,13 @@ struct Coordinate gen_fruit(NODE *first)
 {
 	struct Coordinate fruit;
 re_fruit:
-	// åœ¨1åˆ°X/Y_MAXä¹‹é—´å–æ•°
+	// ÔÚ1µ½X/Y_MAXÖ®¼äÈ¡Êı
 	srand(time(NULL));
 	fruit.x = 1 + rand() % (X_MAX - 2);
-	srand(time(NULL) % rand());
+	srand(time(NULL));
 	fruit.y = 1 + rand() % (Y_MAX - 2);
 
-	// æ£€æŸ¥æ˜¯å¦åœ¨è›‡èº«ä¸Š
+	// ¼ì²éÊÇ·ñÔÚÉßÉíÉÏ
 	NODE *current = first->next;
 	for (int i = 0; i < snake_count; i++) {
 		if (fruit.x == (current->coord).x && fruit.y == (current->coord).y)
@@ -287,10 +372,11 @@ inline void kb_check()
 
 void delay()
 {
-	time_t start_time, cur_time; // å˜é‡å£°æ˜
-	time(&start_time);
+	clock_t now = clock();
 	do {
 		kb_check();
-		time(&cur_time);
-	} while ((cur_time - start_time) < TIME_DELAY);
+	} while (clock()-now< TIME_DELAY);
 }
+
+
+
